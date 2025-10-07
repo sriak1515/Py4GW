@@ -56,6 +56,14 @@ from Py4GWCoreLib import ThrottledTimer
 from Py4GWCoreLib import SharedCommandType
 from Py4GWCoreLib import UIManager
 from Py4GWCoreLib import Utils
+from Py4GWCoreLib.py4gwcorelib_src.Timer import ThrottledTimer
+from Py4GW_widget_manager import get_widget_handler
+from Widgets.CustomBehaviors.heroai_integration import customBehaviorAct, disableCustomBehaviors, drawCustomBehaviorPortableGui
+from Widgets.CustomBehaviors.primitives.custom_behavior_loader import CustomBehaviorLoader
+from Widgets.CustomBehaviors.primitives.skillbars.custom_behavior_base_utility import CustomBehaviorBaseUtility
+
+ENABLE_CUSTOM_BEHAVIORS_SKILLS = False
+
 
 
 FOLLOW_COMBAT_DISTANCE = 25.0  # if body blocked, we get close enough.
@@ -88,13 +96,15 @@ widget_handler = WidgetHandler()
 module_info = None
 
 GLOBAL_CACHE.Coroutines.clear()
+custom_behavior_handled = False
 
 def HandleOutOfCombat(cached_data: CacheData):
     if not cached_data.data.is_combat_enabled:  # halt operation if combat is disabled
         return False
     if cached_data.data.in_aggro:
         return False
-
+    if ENABLE_CUSTOM_BEHAVIORS_SKILLS:
+        return customBehaviorAct()
     return cached_data.combat_handler.HandleCombat(ooc=True)
 
 
@@ -133,6 +143,8 @@ def HandleCombat(cached_data: CacheData):
     combat_flagging_handled = HandleCombatFlagging(cached_data)
     if combat_flagging_handled:
         return combat_flagging_handled
+    if ENABLE_CUSTOM_BEHAVIORS_SKILLS:
+        return customBehaviorAct()
     return cached_data.combat_handler.HandleCombat(ooc=False)
 
 
@@ -570,6 +582,9 @@ def UpdateStatus(cached_data: CacheData):
 
     if Map.IsInCinematic():  # halt operation during cinematic
         return
+    
+    if ENABLE_CUSTOM_BEHAVIORS_SKILLS:
+        drawCustomBehaviorPortableGui()
 
     DrawFlags(cached_data)
 
@@ -649,7 +664,13 @@ def configure():
 def main():
     global cached_data, settings
     
-    try:        
+    global custom_behavior_handled
+    if not custom_behavior_handled:
+        if ENABLE_CUSTOM_BEHAVIORS_SKILLS:
+            disableCustomBehaviors()
+        custom_behavior_handled = True
+
+    try:
         if not Routines.Checks.Map.MapValid():
             map_quads.clear()
             return
