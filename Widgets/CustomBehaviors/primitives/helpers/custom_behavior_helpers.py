@@ -1,3 +1,4 @@
+import math
 import time
 from collections.abc import Generator
 from dataclasses import dataclass
@@ -41,6 +42,13 @@ class GravityCenter:
     coordinates: tuple[float, float]
     agent_covered_count: int
     distance_from_player: float
+
+@dataclass
+class ScytheOptimalAttack:
+    enemy_id: int
+    coordinates: tuple[float, float]
+    distance_from_player: float
+    score: int
 
 class Helpers:
 
@@ -477,7 +485,7 @@ class Actions:
         return BehaviorResult.ACTION_SKIPPED
 
 class Targets:
-    
+
     @staticmethod
     def find_optimal_gravity_center(range_to_cover: Range, agent_ids: list[int]) -> GravityCenter | None:
         '''
@@ -486,29 +494,29 @@ class Targets:
         OVERLAY_DEBUG = constants.DEBUG
         player_x, player_y, player_z = Agent.GetXYZ(GLOBAL_CACHE.Player.GetAgentID()) #cached_data.data.player_xyz # needs to be live
         if OVERLAY_DEBUG: Overlay().BeginDraw()
-        
+
         player_position: tuple[float, float] = GLOBAL_CACHE.Player.GetXY()
         other_party_member_positions = [Agent.GetXY(agent_id) for agent_id in agent_ids]
         # other_party_member_positions: list[tuple[float, float]] = [Agent.GetXY(agent_id) for agent_id in GLOBAL_CACHE.AgentArray.GetAllyArray() if agent_id != GLOBAL_CACHE.Player.GetAgentID()]
         # other_party_member_positions: list[tuple[float, float]] = [Agent.GetXY(agent_id) for agent_id in GLOBAL_CACHE.AgentArray.GetAllyArray()]
         seek_range: float = range_to_cover.value - 50
-        
+
         if OVERLAY_DEBUG: Overlay().DrawPoly3D(player_x, player_y, player_z, seek_range, Utils.RGBToColor(255, 128, 0 , 128), numsegments=32, thickness=5.0)
         # print(f"other_party_member_positions: {other_party_member_positions}")
 
         for pos in other_party_member_positions:
             # Overlay().DrawPoly3D(pos[0], pos[1], player_z, range_to_cover.value, Utils.RGBToColor(128, 255, 0 , 128), numsegments=32, thickness=2.0)
             if OVERLAY_DEBUG: Overlay().DrawPolyFilled3D(pos[0], pos[1], player_z, 30, Utils.RGBToColor(255, 0, 0 , 50), numsegments=32)
-        
+
         if not other_party_member_positions: return None
         if len(other_party_member_positions) == 0: return None
         # if len(other_party_member_positions) == 1: return other_party_member_positions[0]
-        
+
         # print("\n=== Recherche par centres intelligents ===")
         opt_pos, opt_count, opt_distance = custom_behavior_helpers_tests.find_optimal_position_weighted(player_position, other_party_member_positions, seek_range)
         # print(f"Position optimale: {opt_pos}")
         # print(f"Allié couverts: {opt_count}")
-    
+
         if opt_pos is not None:
             if OVERLAY_DEBUG: Overlay().DrawPolyFilled3D(opt_pos[0], opt_pos[1], player_z, seek_range, Utils.RGBToColor(255, 255, 0 , 50), numsegments=32)
             if OVERLAY_DEBUG: Overlay().DrawPolyFilled3D(opt_pos[0], opt_pos[1], player_z, 50, Utils.RGBToColor(0, 255, 255 , 150), numsegments=32)
@@ -520,7 +528,7 @@ class Targets:
         #     sx = sum(p[0] for p in other_party_member_positions)
         #     sy = sum(p[1] for p in other_party_member_positions)
         #     return (sx / len(other_party_member_positions), sy / len(other_party_member_positions))
-                
+
         # Overlay().DrawPolyFilled3D()
         if OVERLAY_DEBUG: Overlay().EndDraw()
         return GravityCenter(coordinates=opt_pos, agent_covered_count=opt_count, distance_from_player=opt_distance)
@@ -538,7 +546,7 @@ class Targets:
 
     @staticmethod
     def is_player_in_aggro() -> bool:
-        
+
         enemy_aggressive_id = Targets.get_nearest_or_default_from_enemy_ordered_by_priority(
             within_range = Range.Spellcast.value + 400,
             should_prioritize_party_target=False,
@@ -576,16 +584,16 @@ class Targets:
 
     @staticmethod
     def is_party_leader_in_aggro() -> bool:
-        
+
         party_leader_id:int = GLOBAL_CACHE.Party.GetPartyLeaderID()
         if Targets.is_party_member_in_aggro(party_leader_id): return True
         return False
 
     @staticmethod
     def is_party_in_aggro() -> bool:
-        
+
         # doing such thing for whole party is too costly
-        #return False
+        # return False
 
         players = GLOBAL_CACHE.Party.GetPlayers()
         for player in players:
@@ -890,7 +898,7 @@ class Targets:
             sort_key=sort_key,
             range_to_count_enemies=range_to_count_enemies
         )
-        
+
     @staticmethod
     def get_all_possible_enemies_ordered_by_priority(
             within_range: Range,
@@ -920,6 +928,59 @@ class Targets:
             range_to_count_enemies=range_to_count_enemies
         )
         return tuple(entry.agent_id for entry in data)
+
+    @staticmethod
+    def get_optimal_scythe_move_and_target(within_range: Range, weight_cleave=10, weight_adjacent=20, fov_angle=90, sample_count=8) -> Optional[ScytheOptimalAttack]:
+        def get_angle_diff(angle1, angle2):
+            """Calculates minimal difference between two radians (0 to PI)"""
+            diff = (angle1 - angle2 + math.pi) % (2 * math.pi) - math.pi
+            return abs(diff)
+        current_pos = GLOBAL_CACHE.Agent.GetXY(GLOBAL_CACHE.Player.GetAgentID())
+        fov_rad_half = math.radians(fov_angle) / 2
+        enemies = Targets.get_all_possible_enemies_ordered_by_priority(within_range)
+        if len(enemies) == 0:
+            return None
+        best_move = {"score": -1, "target_enemy": None, "pos": (0,0), "move_distance": 100000}
+        orbit_distance = Range.Touch.value - 30
+        enemy_to_pos = {enemy: GLOBAL_CACHE.Agent.GetXY(enemy) for enemy in enemies}
+        for enemy in enemies:
+            enemy_x, enemy_y = enemy_to_pos[enemy]
+            for i in range(sample_count):
+                orbit_angle = (2 * math.pi / sample_count) * i
+                player_x = enemy_x + math.cos(orbit_angle) * orbit_distance
+                player_y = enemy_y  + math.sin(orbit_angle) * orbit_distance
+                facing_angle = math.atan2(enemy_y-player_y, enemy_x - player_x)
+
+                adjacent_count = 0
+                cleave_count = 0
+                for other_enemy in enemies:
+                    other_enemy_x, other_enemy_y = enemy_to_pos[other_enemy]
+                    dist = Utils.Distance([player_x, player_y], [other_enemy_x, other_enemy_y])
+
+                    # Adjacent
+                    if dist <= Range.Adjacent.value:
+                        adjacent_count += 1
+                    # Cleave
+                    if cleave_count >= 3:
+                        continue
+                    # skip primary
+                    if other_enemy == enemy:
+                        cleave_count += 1
+                    elif dist <= Range.Touch.value:
+                        angle_to_enemy = math.atan2(other_enemy_y - player_y, other_enemy_x - player_x)
+                        if get_angle_diff(facing_angle, angle_to_enemy) <= fov_rad_half:
+                            cleave_count += 1
+                score = adjacent_count * weight_adjacent + min(cleave_count, 3) * weight_cleave
+                # print(f"Score for {enemy} at angle {orbit_angle} is {score}")
+                if score >= best_move["score"]:
+                    move_distance = Utils.Distance(current_pos, (player_x, player_y))
+                    if score == best_move["score"] and move_distance > best_move["move_distance"]:
+                        continue
+                    best_move["score"] = score
+                    best_move["target_enemy"] = enemy
+                    best_move["pos"] = (player_x, player_y)
+                    best_move["move_distance"] = move_distance
+        return ScytheOptimalAttack(best_move["target_enemy"], best_move["pos"], best_move["move_distance"], best_move["score"])
 
 class Heals:
 

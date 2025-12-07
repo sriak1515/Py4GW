@@ -1,5 +1,6 @@
 from typing import override
 
+from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
 from Widgets.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Widgets.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
 from Widgets.CustomBehaviors.primitives.scores.score_per_health_gravity_definition import ScorePerHealthGravityDefinition
@@ -12,6 +13,7 @@ from Widgets.CustomBehaviors.skills.common.by_urals_hammer_utility import ByUral
 from Widgets.CustomBehaviors.skills.common.ebon_battle_standard_of_wisdom_utility import EbonBattleStandardOfWisdom
 from Widgets.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Widgets.CustomBehaviors.skills.common.i_am_unstoppable_utility import IAmUnstoppableUtility
+from Widgets.CustomBehaviors.skills.generic.conditional_skill_utility import ConditionalSkillUtility
 from Widgets.CustomBehaviors.skills.generic.generic_resurrection_utility import GenericResurrectionUtility
 from Widgets.CustomBehaviors.skills.generic.hero_ai_utility import HeroAiUtility
 from Widgets.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
@@ -88,6 +90,8 @@ class MesmerESurgery_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.signet_of_return_utility: CustomSkillUtilityBase = GenericResurrectionUtility(event_bus=self.event_bus, skill=CustomSkill("Signet_of_Return"), current_build=in_game_build,score_definition=ScoreStaticDefinition(12))
         self.by_urals_hammer_utility: CustomSkillUtilityBase = ByUralsHammerUtility(event_bus=self.event_bus, current_build=in_game_build)
         self.air_of_superiority_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Air_of_Superiority"), mana_required_to_cast=5, current_build=in_game_build, score_definition=ScoreStaticDefinition(50), allowed_states= [BehaviorState.IN_AGGRO])
+        self.dwarven_stability_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Dwarven_Stability"), mana_required_to_cast=5, current_build=in_game_build, score_definition=ScoreStaticDefinition(85), allowed_states=[BehaviorState.IN_AGGRO])
+        self.serpent_quickness_utility: CustomSkillUtilityBase = ConditionalSkillUtility(condition=lambda: GLOBAL_CACHE.Effects.HasEffect(GLOBAL_CACHE.Player.GetAgentID, self.dwarven_stability_utility.custom_skill.skill_id), original_skill=KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Serpents_Quickness"), mana_required_to_cast=5, current_build=in_game_build, score_definition=ScoreStaticDefinition(86), allowed_states=[BehaviorState.IN_AGGRO]), event_bus=self.event_bus)
 
     @property
     @override
@@ -128,6 +132,8 @@ class MesmerESurgery_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.flesh_of_my_flesh_utility,
             self.signet_of_return_utility,
             self.air_of_superiority_utility,
+            self.dwarven_stability_utility,
+            self.serpent_quickness_utility
         ]
 
     @property

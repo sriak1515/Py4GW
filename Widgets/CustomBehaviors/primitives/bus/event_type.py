@@ -14,3 +14,5 @@ class EventType(Enum):
     MAP_CHANGED = auto()
 
     CHEST_OPENED = auto()
+
+    MOVE_ATTACK_TARGET = auto()

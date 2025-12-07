@@ -72,7 +72,7 @@ class AuspiciousIncantationUtility(CustomSkillUtilityBase):
 
         match state:
             case AuspiciousIncantationState.CAST_AUSPICIOUS:
-                return self.auspicious_score_definition.get_score()
+                return self.original_skill_to_cast.evaluate(current_state, previously_attempted_skills)
             case AuspiciousIncantationState.CAST_SKILL:
                 return 95  # force immediate cast of the target skill while buff is active
             case AuspiciousIncantationState.IDLE:

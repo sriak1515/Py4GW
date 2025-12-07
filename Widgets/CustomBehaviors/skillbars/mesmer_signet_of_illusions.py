@@ -47,16 +47,31 @@ class MesmerSignetOfIllusions_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.great_dwarf_weapon_utility: CustomSkillUtilityBase = GreatDwarfWeaponUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(30))
 
         # Must have both
-        self.auspicious_incantation_utility: CustomSkillUtilityBase = ConditionalSkillUtility(event_bus=self.event_bus, condition=has_signet_of_illusion_effect, original_skill=AuspiciousIncantationUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(89), required_missing_mana=25))
-        has_auspicious_incantation_effect = lambda : Routines.Checks.Effects.HasBuff(GLOBAL_CACHE.Player.GetAgentID(), self.auspicious_incantation_utility.custom_skill.skill_id)
-        self.chiblains_utility: CustomSkillUtilityBase = ConditionalSkillUtility(event_bus=self.event_bus, condition=has_signet_of_illusion_effect,
-                                                                                 original_skill=ConditionalSkillUtility(event_bus=self.event_bus, condition=has_auspicious_incantation_effect,
-                                                                                    original_skill=RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Chilblains"), current_build=in_game_build, score_definition=ScorePerAgentQuantityDefinition(lambda _: 89))))
+        if any([x for x in in_game_build if x.skill_name == "Chilblains"]):
+            self.auspicious_incantation_utility: CustomSkillUtilityBase = ConditionalSkillUtility(
+                event_bus=self.event_bus, condition=has_signet_of_illusion_effect,
+                original_skill=AuspiciousIncantationUtility(
+                    event_bus=self.event_bus, current_build=in_game_build,
+                    original_skill_to_cast=RawAoeAttackUtility(
+                        event_bus=self.event_bus,
+                        skill=CustomSkill("Chilblains"),
+                        current_build=in_game_build,
+                        score_definition=ScorePerAgentQuantityDefinition(lambda _: 89))))
+        else:
+            self.auspicious_incantation_utility: CustomSkillUtilityBase = ConditionalSkillUtility(
+                event_bus=self.event_bus, condition=has_signet_of_illusion_effect,
+                original_skill=AuspiciousIncantationUtility(
+                    event_bus=self.event_bus, current_build=in_game_build,
+                    original_skill_to_cast=HealPartyUtility(event_bus=self.event_bus, current_build=in_game_build)))
+        # has_auspicious_incantation_effect = lambda : Routines.Checks.Effects.HasBuff(GLOBAL_CACHE.Player.GetAgentID(), self.auspicious_incantation_utility.custom_skill.skill_id)
+        # self.chiblains_utility: CustomSkillUtilityBase = ConditionalSkillUtility(event_bus=self.event_bus, condition=has_signet_of_illusion_effect,
+                                                                                #  original_skill=ConditionalSkillUtility(event_bus=self.event_bus, condition=has_auspicious_incantation_effect,
+                                                                                    # original_skill=RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Chilblains"), current_build=in_game_build, score_definition=ScorePerAgentQuantityDefinition(lambda _: 89))))
         self.dark_aura_utility: CustomSkillUtilityBase = ConditionalSkillUtility(event_bus=self.event_bus, condition=has_signet_of_illusion_effect, original_skill=DarkAuraUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(82)))
         self.mark_of_pain_utility: CustomSkillUtilityBase = ConditionalSkillUtility(event_bus=self.event_bus, condition=has_signet_of_illusion_effect, original_skill=HeroAiUtility(event_bus=self.event_bus, skill=CustomSkill("Mark_of_Pain"), current_build=in_game_build))
-        self.heal_party_utility: CustomSkillUtilityBase = ConditionalSkillUtility(event_bus=self.event_bus, condition=has_signet_of_illusion_effect,
-                                                                                  original_skill=ConditionalSkillUtility(event_bus=self.event_bus, condition=has_auspicious_incantation_effect,
-                                                                                                          original_skill=HealPartyUtility(event_bus=self.event_bus, current_build=in_game_build)))
+        # self.heal_party_utility: CustomSkillUtilityBase = ConditionalSkillUtility(event_bus=self.event_bus, condition=has_signet_of_illusion_effect,
+                                                                                #   original_skill=ConditionalSkillUtility(event_bus=self.event_bus, condition=has_auspicious_incantation_effect,
+                                                                                                        #   original_skill=))
 
     @property
     @override
@@ -72,11 +87,11 @@ class MesmerSignetOfIllusions_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.power_drain_utility,
             self.great_dwarf_weapon_utility,
             self.auspicious_incantation_utility,
-            self.chiblains_utility,
+            # self.chiblains_utility,
             self.dark_aura_utility,
             self.mark_of_pain_utility,
             self.judges_insight,
-            self.heal_party_utility
+            # self.heal_party_utility
         ]
     
     @property

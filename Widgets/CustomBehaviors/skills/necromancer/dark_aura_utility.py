@@ -1,8 +1,7 @@
 from typing import List, Any, Generator, Callable, override
 
-from PyAgent import Profession
-
 from Py4GWCoreLib import GLOBAL_CACHE, Routines, Range
+from Py4GWCoreLib.enums import Profession
 from Widgets.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Widgets.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Widgets.CustomBehaviors.primitives.helpers import custom_behavior_helpers
