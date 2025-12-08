@@ -10,6 +10,8 @@ from Widgets.CustomBehaviors.primitives.helpers.targeting_order import Targeting
 from Widgets.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
 from Widgets.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Widgets.CustomBehaviors.primitives.skills.bonds.custom_buff_multiple_target import CustomBuffMultipleTarget
+from Widgets.CustomBehaviors.primitives.skills.bonds.custom_buff_target import CustomBuffTarget
+from Widgets.CustomBehaviors.primitives.skills.bonds.custom_buff_target_per_email import BuffConfigurationPerPlayerEmail
 from Widgets.CustomBehaviors.primitives.skills.bonds.custom_buff_target_per_profession import BuffConfigurationPerProfession
 from Widgets.CustomBehaviors.primitives.skills.bonds.profession_configuration import ProfessionConfiguration
 from Widgets.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
@@ -31,7 +33,7 @@ class DarkAuraUtility(CustomSkillUtilityBase):
                  current_build: list[CustomSkill],
                  score_definition: ScoreStaticDefinition = ScoreStaticDefinition(20),
                  mana_required_to_cast: int = 20,
-                 allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]
+                 allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]
                  ) -> None:
 
 
@@ -45,11 +47,7 @@ class DarkAuraUtility(CustomSkillUtilityBase):
 
         self.score_definition: ScorePerAgentQuantityDefinition = score_definition
         # Use the buff configuration helper. Choose a sensible default config; change to per-profession if desired.
-        self.buff_configuration: CustomBuffMultipleTarget = CustomBuffMultipleTarget(
-            event_bus,
-            self.custom_skill,
-            buff_configuration_per_profession=[ProfessionConfiguration(Profession.Dervish, True)]
-        )
+        self.buff_configuration: CustomBuffTarget = BuffConfigurationPerPlayerEmail(self.custom_skill)
 
 
     def _get_target(self) -> int | None:

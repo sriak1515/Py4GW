@@ -33,31 +33,49 @@ class NecromancerSoulTakerSupport_UtilitySkillBar(CustomBehaviorBaseUtility):
 
     def __init__(self):
         super().__init__()
+
+        IS_MANUAL = True
         in_game_build = list(self.skillbar_management.get_in_game_build().values())
 
         # core skills
         self.soul_taker_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Soul_Taker"), current_build=in_game_build, score_definition=ScoreStaticDefinition(90), renew_before_expiration_in_milliseconds=1100)
         self.masochism_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Masochism"), current_build=in_game_build, score_definition=ScoreStaticDefinition(89), renew_before_expiration_in_milliseconds=1100)
 
+        self.grenths_aura_utility = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Grenths_Aura"), current_build=in_game_build, score_definition=ScoreStaticDefinition(82))
+
         # combat
         self.twin_moon_sweep_utility: CustomSkillUtilityBase = EnchantmentReapingSkillUtility(
             event_bus=self.event_bus,
+            excluded_skills=[self.grenths_aura_utility.custom_skill],
+            skill_execution_history=self.skill_execution_history,
             original_skill=GenericScytheSkillUtility(
                 event_bus=self.event_bus,
                 skill=CustomSkill("Twin_Moon_Sweep"),
                 current_build=in_game_build,
                 mana_required_to_cast=10,
+                is_manual=IS_MANUAL,
                 score_definition=ScoreStaticDefinition(87)))
 
         self.rending_sweep_utility: CustomSkillUtilityBase = EnchantmentReapingSkillUtility(
             event_bus=self.event_bus,
+            excluded_skills=[self.grenths_aura_utility.custom_skill],
+            skill_execution_history=self.skill_execution_history,
             original_skill=GenericScytheSkillUtility(event_bus=self.event_bus,
                                                   skill=CustomSkill("Eremites_Attack"),
                                                   current_build=in_game_build,
+                                                  is_manual=IS_MANUAL,
                                                   mana_required_to_cast=15,
                                                   score_definition=ScoreStaticDefinition(86)))
 
-        self.optimal_scythe_target_utility: CustomSkillUtilityBase = OptimalScytheTargetUtility(event_bus=self.event_bus, current_build=in_game_build)
+        self.mystic_sweep_utility = GenericScytheSkillUtility(event_bus=self.event_bus,
+                                                  skill=CustomSkill("Mystic_Sweep"),
+                                                  current_build=in_game_build,
+                                                  is_manual=IS_MANUAL,
+                                                  mana_required_to_cast=15,
+                                                  score_definition=ScoreStaticDefinition(80))
+        
+
+        # self.optimal_scythe_target_utility: CustomSkillUtilityBase = OptimalScytheTargetUtility(event_bus=self.event_bus, current_build=in_game_build)
         self.auto_attack_move_utiltiy = CustomSkillUtilityBase = AutoAttackMoveUtility(self.event_bus, in_game_build)
 
         # common
@@ -77,24 +95,25 @@ class NecromancerSoulTakerSupport_UtilitySkillBar(CustomBehaviorBaseUtility):
     def complete_build_with_generic_skills(self) -> bool:
         return False
 
-    @property
-    @override
-    def additional_autonomous_skills(self) -> list[CustomSkillUtilityBase]:
-        skills = super().additional_autonomous_skills
-        skills = [x for x in skills if not isinstance(x, AutoAttackUtility)]
-        skills.append(self.optimal_scythe_target_utility)
-        skills.append(self.auto_attack_move_utiltiy)
-        return skills
+    # @property
+    # @override
+    # def additional_autonomous_skills(self) -> list[CustomSkillUtilityBase]:
+    #     skills = super().additional_autonomous_skills
+    #     skills = [x for x in skills if not isinstance(x, AutoAttackUtility)]
+    #     # skills.append(self.optimal_scythe_target_utility)
+    #     skills.append(self.auto_attack_move_utiltiy)
+    #     return skills
 
     @property
     @override
     def skills_allowed_in_behavior(self) -> list[CustomSkillUtilityBase]:
         return [
             self.soul_taker_utility,
+            self.grenths_aura_utility,
             self.twin_moon_sweep_utility,
             self.rending_sweep_utility,
+            self.mystic_sweep_utility,
             self.drunken_master_utility,
-            self.optimal_scythe_target_utility,
             self.ebon_vanguard_assassin_support,
             self.ebon_battle_standard_of_wisdom,
             self.i_am_unstopabble,

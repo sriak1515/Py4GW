@@ -27,6 +27,8 @@ class EnchantmentReapingSkillUtility(CustomSkillUtilityBase):
     def __init__(self, 
                     event_bus: EventBus,
                     original_skill: CustomSkillUtilityBase,
+                    skill_execution_history: deque[UtilitySkillExecutionHistory],
+                    excluded_skills: List[CustomSkill] = []
             ) -> None:
         super().__init__(
             event_bus=event_bus,
@@ -34,17 +36,27 @@ class EnchantmentReapingSkillUtility(CustomSkillUtilityBase):
             in_game_build=original_skill.in_game_build,
             allowed_states=original_skill.allowed_states
         )
-        self.pious_renewal_custom_skill = CustomSkill("Pious_Renewal")
         self.original_skill: CustomSkillUtilityBase = original_skill
+        self.excluded_skills = set([skill.skill_id for skill in excluded_skills])
+        self.skill_execution_history = skill_execution_history
         self.dervish_enchants_skills: List[CustomSkill] = [skill for skill in original_skill.in_game_build
-                         if GLOBAL_CACHE.Skill.Flags.IsEnchantment(skill.skill_id) and GLOBAL_CACHE.Skill.GetProfession(skill.skill_id)[0] == Profession.Dervish.value]
+                         if GLOBAL_CACHE.Skill.Flags.IsEnchantment(skill.skill_id) and
+                            GLOBAL_CACHE.Skill.GetProfession(skill.skill_id)[0] == Profession.Dervish.value]
+        self.dervish_enchants_skill_ids = [skill.skill_id for skill in self.dervish_enchants_skills]
 
 
     def _has_dervish_buf(self):
-        for skill in self.dervish_enchants_skills:
-            if Routines.Checks.Effects.HasBuff(GLOBAL_CACHE.Player.GetAgentID(), skill.skill_id):
-                return True
-        return False
+        enchants_action_performed_history = [skill_execution
+                            for skill_execution in self.skill_execution_history
+                            if skill_execution.result == BehaviorResult.ACTION_PERFORMED
+                            and skill_execution.skill.custom_skill.skill_id in self.dervish_enchants_skill_ids]
+        if len(enchants_action_performed_history) == 0:
+            return False
+        last_enchant_perfomed_skill_id = enchants_action_performed_history[-1].skill.custom_skill.skill_id
+        if last_enchant_perfomed_skill_id in self.excluded_skills:
+            return False
+        else:
+            return True
 
     def _get_state(self, current_state: BehaviorState) -> Tuple[ReapingState, CustomSkill | None]:
         if self._has_dervish_buf():
@@ -63,6 +75,8 @@ class EnchantmentReapingSkillUtility(CustomSkillUtilityBase):
 
     def get_recharched_dervish_enchantment_skill_slot(self) -> CustomSkill | None:
         for skill in self.dervish_enchants_skills:
+            if skill.skill_id in self.excluded_skills:
+                continue
             if Routines.Checks.Skills.IsSkillSlotReady(skill.skill_slot) and custom_behavior_helpers.Resources.has_enough_resources(skill):
                 return skill
         return None
