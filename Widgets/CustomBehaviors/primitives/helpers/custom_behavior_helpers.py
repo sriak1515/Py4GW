@@ -6,7 +6,7 @@ from typing import Any, Callable, Optional, Tuple
 
 from Py4GWCoreLib.GlobalCache.SharedMemory import AccountData
 from Py4GWCoreLib.enums_src.Model_enums import GadgetModelID
-from Py4GWCoreLib.py4gwcorelib_src.Timer import Timer
+from Py4GWCoreLib.enums_src.GameData_enums import Weapon
 from Widgets.CustomBehaviors.primitives.helpers import custom_behavior_helpers_tests
 from Widgets.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
 from Widgets.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
@@ -64,12 +64,70 @@ class Helpers:
         while (time.time() - start_time) < milliseconds / 1000:
             yield 'wait'  # Pause and allow resumption while waiting
         return
+    
+    @staticmethod
+    def get_weapon_attack_aftercast():
+        """
+        Returns the attack speed of the current weapon.
+        """
+        weapon_type,_ = GLOBAL_CACHE.Agent.GetWeaponType(GLOBAL_CACHE.Player.GetAgentID())
+        player = GLOBAL_CACHE.Agent.GetAgentByID(GLOBAL_CACHE.Player.GetAgentID())
+        if player is None:
+            return 0
+        
+        attack_speed = player.living_agent.weapon_attack_speed
+        attack_speed_modifier = player.living_agent.attack_speed_modifier if player.living_agent.attack_speed_modifier != 0 else 1.0
+        
+        if attack_speed == 0:
+            match weapon_type:
+                case Weapon.Bow.value:
+                    attack_speed = 2.475
+                case Weapon.Axe.value:
+                    attack_speed = 1.33
+                case Weapon.Hammer.value:
+                    attack_speed = 1.75
+                case Weapon.Daggers.value:
+                    attack_speed = 1.33
+                case Weapon.Scythe.value:
+                    attack_speed = 1.5
+                case Weapon.Spear.value:
+                    attack_speed = 1.5
+                case Weapon.Sword.value:
+                    attack_speed = 1.33
+                case Weapon.Scepter.value:
+                    attack_speed = 1.75
+                case Weapon.Scepter2.value:
+                    attack_speed = 1.75
+                case Weapon.Wand.value:
+                    attack_speed = 1.75
+                case Weapon.Staff1.value:
+                    attack_speed = 1.75
+                case Weapon.Staff.value:
+                    attack_speed = 1.75
+                case Weapon.Staff2.value:
+                    attack_speed = 1.75
+                case Weapon.Staff3.value:
+                    attack_speed = 1.75
+                case _:
+                    attack_speed = 1.75
+                    
+        return int((attack_speed / attack_speed_modifier) * 1000)
+
 
     @staticmethod
     def delay_aftercast(skill_casted: CustomSkill) -> Generator[Any, Any, Any]:
+        attributes = GLOBAL_CACHE.Agent.GetAttributes(GLOBAL_CACHE.Player.GetAgentID())
+        fast_casting_level = next((attribute.level for attribute in attributes if attribute.GetName() == "Fast Casting"), 0)
 
-        activation_time = GLOBAL_CACHE.Skill.Data.GetActivation(skill_casted.skill_id) * 1000
+        if fast_casting_level > 0:
+            activation_time, _ = Routines.Checks.Skills.apply_fast_casting(skill_casted.skill_id, fast_casting_level)
+            activation_time *= 1000
+        else:
+            activation_time = GLOBAL_CACHE.Skill.Data.GetActivation(skill_casted.skill_id) * 1000
         aftercast = GLOBAL_CACHE.Skill.Data.GetAftercast(skill_casted.skill_id) * 1000
+        # skill_type, _ = GLOBAL_CACHE.Skill.GetType(skill_casted.skill_id)
+        # if skill_type == SkillType.Attack.value:
+        #     aftercast += Helpers.get_weapon_attack_aftercast()
         delay = activation_time if activation_time > aftercast else aftercast
         if constants.DEBUG: print(f"{skill_casted.skill_name} let's wait for aftercast :{delay}ms | activation_time:{activation_time} | aftercast:{aftercast}")
 
@@ -344,11 +402,8 @@ class Actions:
                 return BehaviorResult.ACTION_SKIPPED
             target_agent_id = selected_target
 
-        if target_agent_id is not None: 
-            GLOBAL_CACHE.Player.ChangeTarget(target_agent_id)
-            yield from Helpers.wait_for(50)
-            
-        Routines.Sequential.Skills.CastSkillSlot(skill.skill_slot)
+        if target_agent_id is not None: yield from Routines.Yield.Agents.ChangeTarget(target_agent_id)
+        yield from Routines.Yield.Skills.CastSkillSlot(skill.skill_slot)
         if constants.DEBUG: print(f"cast_skill_to_target {skill.skill_name} to {target_agent_id}")
         yield from Helpers.delay_aftercast(skill)
         return BehaviorResult.ACTION_PERFORMED
@@ -392,12 +447,8 @@ class Actions:
             return BehaviorResult.ACTION_SKIPPED
 
         # option1
-        if target_agent_id is not None: 
-            GLOBAL_CACHE.Player.ChangeTarget(target_agent_id)
-            yield from Helpers.wait_for(50)
-
-
-        Routines.Sequential.Skills.CastSkillID(skill.skill_id)
+        if target_agent_id is not None: yield from Routines.Yield.Agents.ChangeTarget(target_agent_id)
+        yield from Routines.Yield.Skills.CastSkillID(skill.skill_id)
         # option2
         # ActionQueueManager().AddAction("ACTION", SkillBar.UseSkill, skill_slot, target_agent_id)
         if constants.DEBUG: print(f"cast_skill_to_target {skill.skill_name} to {target_agent_id}")

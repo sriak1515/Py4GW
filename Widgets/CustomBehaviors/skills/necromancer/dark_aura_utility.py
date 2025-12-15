@@ -1,5 +1,7 @@
 from typing import List, Any, Generator, Callable, override
 
+from PyAgent import Profession
+
 from Py4GWCoreLib import GLOBAL_CACHE, Routines, Range
 from Widgets.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Widgets.CustomBehaviors.primitives.bus.event_bus import EventBus
@@ -10,6 +12,7 @@ from Widgets.CustomBehaviors.primitives.scores.score_per_agent_quantity_definiti
 from Widgets.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Widgets.CustomBehaviors.primitives.skills.bonds.custom_buff_multiple_target import CustomBuffMultipleTarget
 from Widgets.CustomBehaviors.primitives.skills.bonds.custom_buff_target_per_profession import BuffConfigurationPerProfession
+from Widgets.CustomBehaviors.primitives.skills.bonds.profession_configuration import ProfessionConfiguration
 from Widgets.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Widgets.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 
@@ -32,6 +35,7 @@ class DarkAuraUtility(CustomSkillUtilityBase):
                  allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]
                  ) -> None:
 
+
         super().__init__(
             event_bus=event_bus,
             skill=CustomSkill("Dark_Aura"),
@@ -45,8 +49,9 @@ class DarkAuraUtility(CustomSkillUtilityBase):
         self.buff_configuration: CustomBuffMultipleTarget = CustomBuffMultipleTarget(
             event_bus,
             self.custom_skill,
-            buff_configuration_per_profession=BuffConfigurationPerProfession.BUFF_CONFIGURATION_ALL
+            buff_configuration_per_profession=[ProfessionConfiguration(Profession.Dervish, True)]
         )
+
 
     def _get_target(self) -> int | None:
 

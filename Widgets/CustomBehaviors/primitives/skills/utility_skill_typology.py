@@ -12,3 +12,5 @@ class UtilitySkillTypology(Enum):
     DAEMON = 10
 
     INVENTORY = 11
+
+    SCROLL_OF_RESURRECTION = 50

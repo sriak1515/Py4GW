@@ -279,6 +279,23 @@ def render():
         PyImGui.end_table()
 
 
+    PyImGui.same_line(0, 10)
+
+    if shared_data.is_scroll_of_resurrection_enabled:
+        PyImGui.push_style_var(ImGui.ImGuiStyleVar.FrameBorderSize, 3)
+        PyImGui.push_style_color(PyImGui.ImGuiCol.Border, UtilitySkillTypologyColor.SCROLL_OF_RESURRECTION)
+        if ImGui.ImageButton(f"disable scroll of resurrection", project_root + f"\\gui\\textures\\scroll_of_resurrection.png", 40, 40):
+            CustomBehaviorParty().set_party_is_scroll_of_resurrection_enabled(False)
+        ImGui.show_tooltip("disable scroll of resurrection")
+    else:
+        PyImGui.push_style_var(ImGui.ImGuiStyleVar.FrameBorderSize, 3)
+        PyImGui.push_style_color(PyImGui.ImGuiCol.Border, Utils.ColorToTuple(Utils.RGBToColor(255, 30, 0, 255)))
+        if ImGui.ImageButton(f"enable scroll of resurrection", project_root + f"\\gui\\textures\\scroll_of_resurrection.png", 40, 40):
+            CustomBehaviorParty().set_party_is_scroll_of_resurrection_enabled(True)
+        ImGui.show_tooltip("enable scroll of resurrection")
+    PyImGui.pop_style_var(1)
+    PyImGui.pop_style_color(1)
+
     PyImGui.separator()
 
     if Map.IsExplorable():

@@ -131,6 +131,8 @@ class CustomBehaviorParty:
             return self.get_party_is_blessing_enabled()
         if skill_typology == UtilitySkillTypology.INVENTORY :
             return self.get_party_is_inventory_enabled()
+        if skill_typology == UtilitySkillTypology.SCROLL_OF_RESURRECTION :
+            return self.get_party_is_scroll_of_resurrection_enabled()
         return True
 
     #---
@@ -149,6 +151,7 @@ class CustomBehaviorParty:
             is_following_enabled=shared_data.is_following_enabled, 
             is_blessing_enabled=shared_data.is_blessing_enabled, 
             is_inventory_enabled=shared_data.is_inventory_enabled,
+            is_scroll_of_resurrection_enabled=shared_data.is_scroll_of_resurrection_enabled,
             party_target_id=shared_data.party_target_id, 
             party_forced_state=shared_data.party_forced_state)
 
@@ -168,6 +171,7 @@ class CustomBehaviorParty:
             is_following_enabled=shared_data.is_following_enabled, 
             is_blessing_enabled=shared_data.is_blessing_enabled, 
             is_inventory_enabled=shared_data.is_inventory_enabled,
+            is_scroll_of_resurrection_enabled=shared_data.is_scroll_of_resurrection_enabled,
             party_target_id=shared_data.party_target_id,
             party_forced_state=shared_data.party_forced_state)
 
@@ -187,6 +191,7 @@ class CustomBehaviorParty:
             is_following_enabled=shared_data.is_following_enabled, 
             is_blessing_enabled=shared_data.is_blessing_enabled, 
             is_inventory_enabled=shared_data.is_inventory_enabled,
+            is_scroll_of_resurrection_enabled=shared_data.is_scroll_of_resurrection_enabled,
             party_target_id=shared_data.party_target_id,
             party_forced_state=shared_data.party_forced_state)
 
@@ -206,6 +211,7 @@ class CustomBehaviorParty:
             is_following_enabled=shared_data.is_following_enabled, 
             is_blessing_enabled=shared_data.is_blessing_enabled, 
             is_inventory_enabled=shared_data.is_inventory_enabled,
+            is_scroll_of_resurrection_enabled=shared_data.is_scroll_of_resurrection_enabled,
             party_target_id=shared_data.party_target_id,
             party_forced_state=shared_data.party_forced_state)
 
@@ -225,6 +231,7 @@ class CustomBehaviorParty:
             is_following_enabled=is_following_enabled, 
             is_blessing_enabled=shared_data.is_blessing_enabled, 
             is_inventory_enabled=shared_data.is_inventory_enabled,
+            is_scroll_of_resurrection_enabled=shared_data.is_scroll_of_resurrection_enabled,
             party_target_id=shared_data.party_target_id,
             party_forced_state=shared_data.party_forced_state)
 
@@ -244,6 +251,7 @@ class CustomBehaviorParty:
             is_following_enabled=shared_data.is_following_enabled, 
             is_blessing_enabled=is_blessing_enabled, 
             is_inventory_enabled=shared_data.is_inventory_enabled,
+            is_scroll_of_resurrection_enabled=shared_data.is_scroll_of_resurrection_enabled,
             party_target_id=shared_data.party_target_id,
             party_forced_state=shared_data.party_forced_state)
 
@@ -252,6 +260,10 @@ class CustomBehaviorParty:
     def get_party_is_inventory_enabled(self) -> bool:
         shared_data:CustomBehaviorWidgetData = CustomBehaviorWidgetMemoryManager().GetCustomBehaviorWidgetData()
         return shared_data.is_inventory_enabled
+
+    def get_party_is_scroll_of_resurrection_enabled(self) -> bool:
+        shared_data:CustomBehaviorWidgetData = CustomBehaviorWidgetMemoryManager().GetCustomBehaviorWidgetData()
+        return shared_data.is_scroll_of_resurrection_enabled
 
     def set_party_is_inventory_enabled(self, is_inventory_enabled: bool):
         shared_data:CustomBehaviorWidgetData = CustomBehaviorWidgetMemoryManager().GetCustomBehaviorWidgetData()
@@ -263,6 +275,21 @@ class CustomBehaviorParty:
             is_following_enabled=shared_data.is_following_enabled, 
             is_blessing_enabled=shared_data.is_blessing_enabled, 
             is_inventory_enabled=is_inventory_enabled,
+            is_scroll_of_resurrection_enabled=shared_data.is_scroll_of_resurrection_enabled,
+            party_target_id=shared_data.party_target_id,
+            party_forced_state=shared_data.party_forced_state)
+
+    def set_party_is_scroll_of_resurrection_enabled(self, is_scroll_of_resurrection_enabled: bool):
+        shared_data:CustomBehaviorWidgetData = CustomBehaviorWidgetMemoryManager().GetCustomBehaviorWidgetData()
+        CustomBehaviorWidgetMemoryManager().SetCustomBehaviorWidgetData(
+            is_enabled=shared_data.is_enabled, 
+            is_combat_enabled=shared_data.is_combat_enabled, 
+            is_looting_enabled=shared_data.is_looting_enabled, 
+            is_chesting_enabled=shared_data.is_chesting_enabled, 
+            is_following_enabled=shared_data.is_following_enabled, 
+            is_blessing_enabled=shared_data.is_blessing_enabled, 
+            is_inventory_enabled=shared_data.is_inventory_enabled,
+            is_scroll_of_resurrection_enabled=is_scroll_of_resurrection_enabled,
             party_target_id=shared_data.party_target_id,
             party_forced_state=shared_data.party_forced_state)
 
@@ -283,6 +310,7 @@ class CustomBehaviorParty:
             is_following_enabled=shared_data.is_following_enabled,
             is_blessing_enabled=shared_data.is_blessing_enabled, 
             is_inventory_enabled=shared_data.is_inventory_enabled,
+            is_scroll_of_resurrection_enabled=shared_data.is_scroll_of_resurrection_enabled,
             party_target_id=shared_data.party_target_id,
             party_forced_state=state.value if state is not None else None)
 
@@ -302,5 +330,6 @@ class CustomBehaviorParty:
             is_following_enabled=shared_data.is_following_enabled,
             is_blessing_enabled=shared_data.is_blessing_enabled, 
             is_inventory_enabled=shared_data.is_inventory_enabled,
+            is_scroll_of_resurrection_enabled=shared_data.is_scroll_of_resurrection_enabled,
             party_target_id=target,
             party_forced_state=shared_data.party_forced_state)

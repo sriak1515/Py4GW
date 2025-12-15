@@ -22,6 +22,7 @@ from Widgets.CustomBehaviors.skills.paragon.fall_back_utility import FallBackUti
 from Widgets.CustomBehaviors.skills.paragon.heroic_refrain_utility import HeroicRefrainUtility
 from Widgets.CustomBehaviors.skills.paragon.holy_spear_utility import HolySpearUtility
 from Widgets.CustomBehaviors.skills.warrior.protectors_defense_utility import ProtectorsDefenseUtility
+from Widgets.CustomBehaviors.skills.warrior.to_the_limit_utility import ToTheLimitUtility
 
 
 class ParagonRefrain_UtilitySkillBar(CustomBehaviorBaseUtility):
@@ -33,12 +34,16 @@ class ParagonRefrain_UtilitySkillBar(CustomBehaviorBaseUtility):
         #core
         self.heroic_refrain_utility: CustomSkillUtilityBase = HeroicRefrainUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(50))
         self.theyre_on_fire_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Theyre_on_Fire"), current_build=in_game_build, score_definition=ScoreStaticDefinition(80), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
-
+        
         #optional
         self.theres_nothing_to_fear: CustomSkillUtilityBase = ProtectiveShoutUtility(event_bus=self.event_bus, skill=CustomSkill("Theres_Nothing_to_Fear"), current_build=in_game_build, allies_health_less_than_percent=0.9, allies_quantity_required=1,score_definition= ScoreStaticDefinition(90), allowed_states=[BehaviorState.IN_AGGRO])
         self.save_yourselves_luxon: CustomSkillUtilityBase = ProtectiveShoutUtility(event_bus=self.event_bus, skill=CustomSkill("Save_Yourselves_luxon"), current_build=in_game_build, allies_health_less_than_percent=0.7, allies_quantity_required=1,score_definition=ScoreStaticDefinition(89), allowed_states=[BehaviorState.IN_AGGRO])
         self.save_yourselves_kurzick: CustomSkillUtilityBase = ProtectiveShoutUtility(event_bus=self.event_bus, skill=CustomSkill("Save_Yourselves_kurzick"), current_build=in_game_build, allies_health_less_than_percent=0.7, allies_quantity_required=1,score_definition=ScoreStaticDefinition(89), allowed_states=[BehaviorState.IN_AGGRO])
         self.never_surrender: CustomSkillUtilityBase = ProtectiveShoutUtility(event_bus=self.event_bus, skill=CustomSkill("Never_Surrender"), current_build=in_game_build, allies_health_less_than_percent=0.7,allies_quantity_required=2,score_definition=ScoreStaticDefinition(88), allowed_states=[BehaviorState.IN_AGGRO])
+        self.stand_your_ground_utility: CustomSkillUtilityBase = ProtectiveShoutUtility(event_bus=self.event_bus, skill=CustomSkill("Stand_Your_Ground"), current_build=in_game_build, allies_health_less_than_percent=0.7,allies_quantity_required=2,score_definition=ScoreStaticDefinition(87), allowed_states=[BehaviorState.IN_AGGRO])
+        self.for_great_justice_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("For_Great_Justice"), current_build=in_game_build, score_definition=ScoreStaticDefinition(80), allowed_states=[BehaviorState.IN_AGGRO])
+        self.aggressive_refrain: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Aggressive_Refrain"), current_build=in_game_build, score_definition=ScoreStaticDefinition(81), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
+        self.to_the_limit_utility: CustomSkillUtilityBase = ToTheLimitUtility(event_bus=self.event_bus, current_build=in_game_build)
 
         self.blazing_finale_utility: CustomSkillUtilityBase = BlazingFinaleUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(33))
         self.holy_spear_utility: CustomSkillUtilityBase = HolySpearUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 70 if enemy_qte >= 2 else 35 if enemy_qte <= 2 else 0))
@@ -69,6 +74,10 @@ class ParagonRefrain_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.never_surrender,
             self.blazing_finale_utility,
             self.holy_spear_utility,
+            self.stand_your_ground_utility,
+            self.for_great_justice_utility,
+            self.aggressive_refrain,
+            self.to_the_limit_utility,
 
             self.jagged_strike_utility,
             self.fox_fangs_utility,

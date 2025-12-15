@@ -9,7 +9,7 @@ from Widgets.CustomBehaviors.skills.common.scroll_of_resurrection_utility import
 def get_custom_additional_skills(instance):
     """Helper function to generate a custom list of autonomous skills for an instance."""
     return [
-        ScrollOfResurrectionUtility(current_build=instance.in_game_build),
+        ScrollOfResurrectionUtility(event_bus=instance.event_bus, current_build=instance.in_game_build),
     ]
 @property
 def custom_additional_autonomous_skills(self):

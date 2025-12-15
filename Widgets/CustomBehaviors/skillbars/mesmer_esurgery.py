@@ -123,6 +123,8 @@ class MesmerESurgery_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.i_am_unstopabble,
             self.breath_of_the_great_dwarf_utility,
             self.by_urals_hammer_utility,
+            self.air_of_superiority_utility,
+
             self.flesh_of_my_flesh_utility,
             self.signet_of_return_utility,
             self.air_of_superiority_utility,

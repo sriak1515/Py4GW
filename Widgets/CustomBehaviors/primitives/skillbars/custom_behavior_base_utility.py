@@ -1,12 +1,12 @@
 from abc import abstractmethod
 from collections import deque
-import inspect
 import traceback
-from typing import List, Generator, Any, override
+from typing import Generator, Any
 import time
 
 from Py4GWCoreLib import GLOBAL_CACHE, Routines, Map, Agent
 from Py4GWCoreLib.Pathing import AutoPathing
+from Py4GWCoreLib import GLOBAL_CACHE, Routines
 from Py4GWCoreLib.Py4GWcorelib import ThrottledTimer, Timer
 from Widgets.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Widgets.CustomBehaviors.primitives.bus.event_bus import EventBus
@@ -25,6 +25,7 @@ from Widgets.CustomBehaviors.skills.common.auto_attack_utility import AutoAttack
 from Widgets.CustomBehaviors.skills.deamon.death_detection import DeathDetectionUtility
 from Widgets.CustomBehaviors.skills.deamon.map_changed import MapChangedUtility
 from Widgets.CustomBehaviors.skills.deamon.stuck_detection import StuckDetectionUtility
+from Widgets.CustomBehaviors.skills.common.scroll_of_resurrection_utility import ScrollOfResurrectionUtility
 from Widgets.CustomBehaviors.skills.following.follow_flag_utility import FollowFlagUtility
 from Widgets.CustomBehaviors.skills.following.follow_flag_utility_new import FollowFlagUtilityNew
 from Widgets.CustomBehaviors.skills.following.follow_party_leader_only_utility import FollowPartyLeaderOnlyUtility
@@ -36,8 +37,8 @@ from Widgets.CustomBehaviors.primitives.scores.score_static_definition import Sc
 from Widgets.CustomBehaviors.primitives import constants
 from Widgets.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import MerchantRefillIfNeededUtility
 from Widgets.CustomBehaviors.skills.looting.loot_utility import LootUtility
-from Widgets.CustomBehaviors.skills.looting.open_near_chest_utility import OpenNearChestUtility
 from Widgets.CustomBehaviors.skills.looting.open_near_dungeon_chest_utility import OpenNearDungeonChestUtility
+from Widgets.CustomBehaviors.skills.looting.open_near_chest_utility import OpenNearChestUtility
 
 class CustomBehaviorBaseUtility():
     """
@@ -83,6 +84,9 @@ class CustomBehaviorBaseUtility():
             # LOOT
             LootUtility(current_build=self.in_game_build, event_bus=self.event_bus),
             OpenNearDungeonChestUtility(event_bus=self.event_bus, current_build=self.in_game_build),
+
+            # Rez scroll
+            ScrollOfResurrectionUtility(event_bus=self.event_bus, current_build=self.in_game_build),
 
             #CHESTING
             OpenNearChestUtility(event_bus=self.event_bus, current_build=self.in_game_build),
@@ -287,12 +291,12 @@ class CustomBehaviorBaseUtility():
     compute_throttler = ThrottledTimer(300)
     execute_throttler = ThrottledTimer(80)
 
-    def act(self):
-        if not self.throttler.IsExpired(): return
+    def act(self) -> bool:
+        if not self.throttler.IsExpired(): return False
         self.throttler.Reset()
-        
-        if not Routines.Checks.Map.MapValid(): return
-        if not self.get_final_is_enabled(): return
+        if not Routines.Checks.Map.MapValid(): return False
+
+        if not self.get_final_is_enabled(): return False
         self.timer.Reset()
         # if (
         # not cached_data.data.player_is_alive
@@ -303,7 +307,7 @@ class CustomBehaviorBaseUtility():
 
         if not self.is_custom_behavior_match_in_game_build(): 
             print("Custom behavior doesn't match in game build, you are not allowed to perform behavior.act().")
-            return
+            return False
 
         # if self.get_final_is_enabled():
         #     account_email = GLOBAL_CACHE.Player.GetAccountEmail()
@@ -329,17 +333,21 @@ class CustomBehaviorBaseUtility():
         if self.execute_throttler.IsExpired():
             self.execute_throttler.Reset()
             self.timer.Reset()
+
             try:
-                next(self._generator_handle)
+                res = next(self._generator_handle)
+                if res == BehaviorResult.ACTION_PERFORMED:
+                    return True
             except StopIteration:
                 print(f"CustomBehaviorBaseUtility.act is not expected to StopIteration.")
+                print(traceback.format_exc())
             except Exception as e:
                 print(f"CustomBehaviorBaseUtility.act is not expected to exit : {e}")
+                print(traceback.format_exc())
             # print(f"performance-audit-frame-duration:{self.timer.GetElapsedTime()}")
-
+        return False
 
     # STATES
-    
     def __fetch_and_memoized_state(self):
 
         def compute_state() -> BehaviorState:

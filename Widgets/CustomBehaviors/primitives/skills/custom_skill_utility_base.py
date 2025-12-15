@@ -17,6 +17,7 @@ from Widgets.CustomBehaviors.primitives.parties.custom_behavior_party import Cus
 from Widgets.CustomBehaviors.primitives.skills.bonds.custom_buff_multiple_target import CustomBuffMultipleTarget
 from Widgets.CustomBehaviors.primitives.skills.bonds.custom_buff_target import CustomBuffTarget
 from Widgets.CustomBehaviors.primitives.skills.bonds.custom_buff_target_per_profession import BuffConfigurationPerProfession
+from Widgets.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Widgets.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 
 from Widgets.CustomBehaviors.primitives.skills.custom_skill_nature import CustomSkillNature
@@ -30,9 +31,9 @@ class CustomSkillUtilityBase:
                 event_bus: EventBus,
                 skill: CustomSkill,
                 in_game_build: list[CustomSkill],
-                score_definition: ScoreDefinition,
-                mana_required_to_cast: float = 0,
-                allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
+                score_definition:ScoreDefinition = ScoreStaticDefinition(0),
+                mana_required_to_cast:float=0,
+                allowed_states:list[BehaviorState] | None =[BehaviorState.IN_AGGRO],
                 utility_skill_typology: UtilitySkillTypology = UtilitySkillTypology.COMBAT,
                 execution_strategy = UtilitySkillExecutionStrategy.EXECUTE_THROUGH_THE_END
                 ):
@@ -54,6 +55,8 @@ class CustomSkillUtilityBase:
         if custom_behavior_helpers.Resources.get_player_absolute_energy() < self.mana_required_to_cast: return False
         if not Routines.Checks.Skills.IsSkillSlotReady(self.custom_skill.skill_slot): return False
         if not custom_behavior_helpers.Resources.has_enough_resources(self.custom_skill): return False
+        if GLOBAL_CACHE.Agent.IsCasting(GLOBAL_CACHE.Player.GetAgentID()): return False
+        if GLOBAL_CACHE.SkillBar.GetCasting() != 0: return False
         return True
     
     @abstractmethod
@@ -75,6 +78,7 @@ class CustomSkillUtilityBase:
         if self.utility_skill_typology == UtilitySkillTypology.CHESTING and not CustomBehaviorParty().get_party_is_chesting_enabled(): return None
         if self.utility_skill_typology == UtilitySkillTypology.BLESSING and not CustomBehaviorParty().get_party_is_blessing_enabled(): return None
         if self.utility_skill_typology == UtilitySkillTypology.INVENTORY and not CustomBehaviorParty().get_party_is_inventory_enabled(): return None
+        if self.utility_skill_typology == UtilitySkillTypology.SCROLL_OF_RESURRECTION and not CustomBehaviorParty().get_party_is_scroll_of_resurrection_enabled(): return None
         if current_state == BehaviorState.IDLE:
             if (self.utility_skill_typology != UtilitySkillTypology.BOTTING
                 and self.utility_skill_typology != UtilitySkillTypology.DAEMON

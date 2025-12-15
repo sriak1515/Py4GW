@@ -12,7 +12,11 @@ class UtilitySkillTypologyColor:
     DAEMON_COLOR = Utils.ColorToTuple(Utils.RGBToColor(150, 150, 150, 200))
     BLESSING_COLOR = Utils.ColorToTuple(Utils.RGBToColor(255, 143, 62, 200))
     INVENTORY_COLOR = Utils.ColorToTuple(Utils.RGBToColor(30, 143, 62, 200))
+<<<<<<< HEAD
     FLAG_COLOR = Utils.ColorToTuple(Utils.RGBToColor(147, 217, 32, 250))
+=======
+    SCROLL_OF_RESURRECTION = Utils.ColorToTuple(Utils.RGBToColor(207, 195, 157, 200))
+>>>>>>> 9e357d42 (Update cb)
 
     @staticmethod
     def get_color_from_typology(utility_skill_typology:UtilitySkillTypology) -> tuple[float, float, float, float]:
@@ -32,5 +36,7 @@ class UtilitySkillTypologyColor:
             return UtilitySkillTypologyColor.BLESSING_COLOR
         if utility_skill_typology == UtilitySkillTypology.INVENTORY:
             return UtilitySkillTypologyColor.INVENTORY_COLOR
+        if utility_skill_typology == UtilitySkillTypology.SCROLL_OF_RESURRECTION:
+            return UtilitySkillTypologyColor.SCROLL_OF_RESURRECTION
             
         return Utils.ColorToTuple(Utils.RGBToColor(255, 255, 255, 200))
