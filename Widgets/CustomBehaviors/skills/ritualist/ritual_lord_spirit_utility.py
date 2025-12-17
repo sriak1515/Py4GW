@@ -1,12 +1,14 @@
 # python
+from collections import deque
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Generator, override
+from typing import Any, Callable, Dict, Generator, List, Optional, override
 
 import PyImGui
 
-from Py4GWCoreLib import GLOBAL_CACHE, Routines
+from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, Routines
 from Py4GWCoreLib.enums_src.GameData_enums import Range
-from Py4GWCoreLib.enums_src.Model_enums import SpiritModelID
+from Py4GWCoreLib.enums_src.Model_enums import SPIRIT_BUFF_MAP, SpiritModelID
 from Widgets.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Widgets.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Widgets.CustomBehaviors.primitives.bus.event_type import EventType
@@ -15,42 +17,63 @@ from Widgets.CustomBehaviors.primitives.helpers.behavior_result import BehaviorR
 from Widgets.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Widgets.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Widgets.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
+from Widgets.CustomBehaviors.primitives.skills.utility_skill_execution_history import UtilitySkillExecutionHistory
 from Widgets.CustomBehaviors.skills.generic.raw_spirit_utility import RawSpiritUtility
 
-class RitualLordState(Enum):
-    CAST_RITUAL_LORD = 1
-    CAST_SKILL = 2
-    IDLE = 3
 
-class RitualLordSpiritUtility(CustomSkillUtilityBase):
+spirit_skill_to_model_id: Dict[int, int] = {skill_id: model_id for model_id, skill_id in SPIRIT_BUFF_MAP.items()}
 
-    def __init__(self,
+
+@dataclass
+class SpiritSkill:
+    name: str
+    score: ScoreStaticDefinition
+    skill: CustomSkill
+    model_id: int
+
+    def __init__(self, name: str, score: ScoreStaticDefinition):
+        self.name = name
+        self.score = score
+        self.skill = CustomSkill(name)
+        if self.skill.skill_id not in spirit_skill_to_model_id:
+            raise ValueError("Invalid spirit: " + name)
+        self.model_id = spirit_skill_to_model_id[self.skill.skill_id]
+
+
+allowed_spirits: List[SpiritSkill] = [
+    SpiritSkill("Shelter", ScoreStaticDefinition(66)),
+    SpiritSkill("Union", ScoreStaticDefinition(65)),
+    SpiritSkill("Displacement", ScoreStaticDefinition(64)),
+    SpiritSkill("Earthbind", ScoreStaticDefinition(60)),
+]
+
+
+class RitualLordUtility(CustomSkillUtilityBase):
+
+    def __init__(
+        self,
         event_bus: EventBus,
-        spirit_skill: CustomSkill,
         current_build: list[CustomSkill],
-        owned_spirit_model_id: SpiritModelID,
-        score_definition: ScoreStaticDefinition = ScoreStaticDefinition(60),
         sacrifice_life_limit_percent: float = 0.55,
         sacrifice_life_limit_absolute: int = 175,
         mana_required_to_cast: int = 0,
-        allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]
-        ) -> None:
+        allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
+    ) -> None:
 
         super().__init__(
             event_bus=event_bus,
-            skill=spirit_skill,
+            skill=CustomSkill("Ritual_Lord"),
             in_game_build=current_build,
-            score_definition=score_definition,
             mana_required_to_cast=mana_required_to_cast,
-            allowed_states=allowed_states
+            allowed_states=allowed_states,
         )
 
-        self.score_definition: ScoreStaticDefinition = score_definition
         self.sacrifice_life_limit_percent: float = sacrifice_life_limit_percent
         self.sacrifice_life_limit_absolute: int = sacrifice_life_limit_absolute
-        self.ritual_lord_skill = CustomSkill("Ritual_Lord")
-        self.spirit_skill = RawSpiritUtility(event_bus=event_bus, skill=spirit_skill, current_build=current_build, owned_spirit_model_id=owned_spirit_model_id)
-        self.owned_spirit_model_id: SpiritModelID = owned_spirit_model_id
+        self.ritual_lord_skill = self.custom_skill
+        self.is_shelter_covered: bool = False
+        skill_ids = [skill.skill_id for skill in current_build]
+        self.available_spirits = [spirit for spirit in allowed_spirits if spirit.skill.skill_id in skill_ids]
 
     def are_common_pre_checks_valid(self, current_state: BehaviorState) -> bool:
         if current_state is BehaviorState.IDLE:
@@ -61,51 +84,85 @@ class RitualLordSpiritUtility(CustomSkillUtilityBase):
             return False
         return True
 
-    def _get_ritual_lord_state(self, current_state: BehaviorState) -> RitualLordState:
+    def get_spirits_array(self, condition: Optional[Callable[[int], bool]] = None) -> List[int]:
+        spirit_array = GLOBAL_CACHE.AgentArray.GetSpiritPetArray()
+        spirit_array = AgentArray.Filter.ByDistance(spirit_array, GLOBAL_CACHE.Player.GetXY(), Range.Spellcast.value)
+        spirit_array = AgentArray.Filter.ByCondition(
+            spirit_array, lambda agent_id: GLOBAL_CACHE.Agent.IsAlive(agent_id)
+        )
+        spirit_array = AgentArray.Filter.ByCondition(
+            spirit_array, lambda agent_id: GLOBAL_CACHE.Agent.IsSpawned(agent_id)
+        )
+        if condition is not None:
+            spirit_array = AgentArray.Filter.ByCondition(spirit_array, condition)
+        return spirit_array
 
-        if Routines.Checks.Effects.HasBuff(GLOBAL_CACHE.Player.GetAgentID(), self.ritual_lord_skill.skill_id):
-            return RitualLordState.CAST_SKILL
+    def spirit_exists(self, spirit_skill: SpiritSkill, spirits_array: List[int]) -> bool:
+        for spirit_id in spirits_array:
+            model_value = GLOBAL_CACHE.Agent.GetPlayerNumber(spirit_id)
+            if spirit_skill.model_id == model_value:
+                return True
+        return False
 
+    def get_spirit_to_cast(self) -> Optional[SpiritSkill]:
+        spirits_array = self.get_spirits_array(lambda agent_id: GLOBAL_CACHE.Agent.GetHealth(agent_id) > 0.3)
+        for spirit_skill in self.available_spirits:
+            is_spirit_skill_ready = Routines.Checks.Skills.IsSkillIDReady(spirit_skill.skill.skill_id)
+            has_energy_for_spirit_skill = custom_behavior_helpers.Resources.has_enough_resources(spirit_skill.skill)
+
+            if not is_spirit_skill_ready or not has_energy_for_spirit_skill:
+                continue
+
+            if spirit_skill.name == "Union" and not self.is_shelter_covered:
+                return spirit_skill
+
+            if not self.spirit_exists(spirit_skill, spirits_array):
+                return spirit_skill
+
+            if (
+                spirit_skill.name != "Earthbind"
+                and GLOBAL_CACHE.Effects.GetEffectTimeRemaining(
+                    GLOBAL_CACHE.Player.GetAgentID(), spirit_skill.skill.skill_id
+                )
+                < 5 * 1000
+            ):
+                return spirit_skill
+
+    def is_ritual_lord_ready(self) -> bool:
         is_ritual_lord_ready = Routines.Checks.Skills.IsSkillIDReady(self.ritual_lord_skill.skill_id)
-        is_spirit_skill_ready = Routines.Checks.Skills.IsSkillIDReady(self.spirit_skill.custom_skill.skill_id)
-        has_health_for_ritual_lord = custom_behavior_helpers.Resources.player_can_sacrifice_health(2, self.sacrifice_life_limit_percent, self.sacrifice_life_limit_absolute)
-        has_energy_for_spirit_skill = custom_behavior_helpers.Resources.has_enough_resources(self.spirit_skill.custom_skill)
-        is_target_prechecks_valid = self.spirit_skill.are_common_pre_checks_valid(current_state)
-        has_spirit_enough_health = custom_behavior_helpers.Resources.is_spirit_exist(
-                within_range=Range.Spellcast,
-                associated_to_skill=self.spirit_skill.custom_skill,
-                condition=lambda agent_id: GLOBAL_CACHE.Agent.GetHealth(agent_id) > 0.3)
-
-        if is_ritual_lord_ready and is_spirit_skill_ready and has_health_for_ritual_lord and has_energy_for_spirit_skill and is_target_prechecks_valid and not has_spirit_enough_health:
-            return RitualLordState.CAST_RITUAL_LORD
-
-        return RitualLordState.IDLE
+        has_health_for_ritual_lord = custom_behavior_helpers.Resources.player_can_sacrifice_health(
+            2, self.sacrifice_life_limit_percent, self.sacrifice_life_limit_absolute
+        )
+        return is_ritual_lord_ready and has_health_for_ritual_lord
 
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
+        if Routines.Checks.Effects.HasBuff(GLOBAL_CACHE.Player.GetAgentID(), self.ritual_lord_skill.skill_id):
+            return 99
 
-        state = self._get_ritual_lord_state(current_state)
-
-        match state:
-            case RitualLordState.CAST_RITUAL_LORD:
-                return self.score_definition.get_score()
-            case RitualLordState.CAST_SKILL:
-                return 95  # force immediate cast of the target skill while buff is active
-            case RitualLordState.IDLE:
-                return None
+        if self.is_ritual_lord_ready():
+            spirit = self.get_spirit_to_cast()
+            if spirit is not None:
+                return spirit.score.get_score()
+        return None
 
     def _execute(self, state: BehaviorState) -> Generator[Any | None, Any | None, BehaviorResult]:
-
-        ritual_lord_state = self._get_ritual_lord_state(state)
-
-        match ritual_lord_state:
-            case RitualLordState.CAST_RITUAL_LORD:
-                result = yield from custom_behavior_helpers.Actions.cast_skill(self.ritual_lord_skill)
+        if Routines.Checks.Effects.HasBuff(GLOBAL_CACHE.Player.GetAgentID(), self.ritual_lord_skill.skill_id):
+            spirit = self.get_spirit_to_cast()
+            if spirit is not None:
+                result = yield from custom_behavior_helpers.Actions.cast_skill(spirit.skill)
+                if result == BehaviorResult.ACTION_PERFORMED:
+                    if spirit.name == "Shelter":
+                        self.is_shelter_covered = False
+                    elif spirit.name == "Union" and Routines.Checks.Effects.HasBuff(GLOBAL_CACHE.Player.GetAgentID(), CustomSkill("Shelter").skill_id):
+                        self.is_shelter_covered = True
+                    yield from self.event_bus.publish(EventType.SPIRIT_CREATED, state, data=spirit.model_id)
                 return result
-            case RitualLordState.CAST_SKILL:
-                result = yield from self.spirit_skill.execute(state)
-                return result
-            case RitualLordState.IDLE:
-                return BehaviorResult.ACTION_SKIPPED
+        if self.is_ritual_lord_ready():
+            result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
+            return result
+        return BehaviorResult.ACTION_SKIPPED
 
+    @override
     def customized_debug_ui(self, current_state: BehaviorState) -> None:
-        PyImGui.bullet_text(f"internal state : {self._get_ritual_lord_state(current_state)}")
+        PyImGui.bullet_text(f"Spirit to cast : {self.get_spirit_to_cast()}")
+        PyImGui.bullet_text(f"Union covers shelter: {self.is_shelter_covered}")

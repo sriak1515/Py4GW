@@ -17,12 +17,11 @@ from Widgets.CustomBehaviors.skills.common.great_dwarf_weapon_utility import Gre
 from Widgets.CustomBehaviors.skills.common.i_am_unstoppable_utility import IAmUnstoppableUtility
 from Widgets.CustomBehaviors.skills.generic.generic_resurrection_utility import GenericResurrectionUtility
 from Widgets.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
-from Widgets.CustomBehaviors.skills.generic.protective_spirit_utility import ProtectiveSpiritUtility
 from Widgets.CustomBehaviors.skills.generic.raw_spirit_utility import RawSpiritUtility
 from Widgets.CustomBehaviors.skills.monk.strength_of_honor_utility import StrengthOfHonorUtility
 from Widgets.CustomBehaviors.skills.paragon.fall_back_utility import FallBackUtility
 from Widgets.CustomBehaviors.skills.ritualist.armor_of_unfeeling_utility import ArmorOfUnfeelingUtility
-from Widgets.CustomBehaviors.skills.ritualist.ritual_lord_spirit_utility import RitualLordSpiritUtility
+from Widgets.CustomBehaviors.skills.ritualist.ritual_lord_spirit_utility import RitualLordUtility
 from Widgets.CustomBehaviors.skills.ritualist.summon_spirit_utility import SummonSpiritUtility
 
 class RitualistRitualLord_UtilitySkillBar(CustomBehaviorBaseUtility):
@@ -33,10 +32,7 @@ class RitualistRitualLord_UtilitySkillBar(CustomBehaviorBaseUtility):
 
         # core skills
         self.boon_of_creation_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Boon_of_Creation"), current_build=in_game_build, score_definition=ScoreStaticDefinition(85), renew_before_expiration_in_milliseconds=1800, allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
-        self.shelter_utility: CustomSkillUtilityBase = RitualLordSpiritUtility(event_bus=self.event_bus, spirit_skill=CustomSkill("Shelter"), current_build=in_game_build, score_definition=ScoreStaticDefinition(66), owned_spirit_model_id=SpiritModelID.SHELTER)
-        self.union_utility: CustomSkillUtilityBase = RitualLordSpiritUtility(event_bus=self.event_bus, spirit_skill=CustomSkill("Union"), current_build=in_game_build, score_definition=ScoreStaticDefinition(65), owned_spirit_model_id=SpiritModelID.UNION)
-        self.displacement_utility: CustomSkillUtilityBase = RitualLordSpiritUtility(event_bus=self.event_bus, spirit_skill=CustomSkill("Displacement"), current_build=in_game_build, score_definition=ScoreStaticDefinition(64), owned_spirit_model_id=SpiritModelID.DISPLACEMENT)
-        self.earthbind_utility: CustomSkillUtilityBase = RitualLordSpiritUtility(event_bus=self.event_bus, spirit_skill=CustomSkill("Earthbind"), current_build=in_game_build, score_definition=ScoreStaticDefinition(60), owned_spirit_model_id=SpiritModelID.EARTHBIND)
+        self.ritual_lord_utility: CustomSkillUtilityBase = RitualLordUtility(event_bus=self.event_bus, current_build=in_game_build)
         self.summon_spirit_kurzick: CustomSkillUtilityBase = SummonSpiritUtility(event_bus=self.event_bus, skill=CustomSkill("Summon_Spirits_kurzick"), current_build=in_game_build, score_definition=ScoreStaticDefinition(95))
         self.summon_spirit_luxon: CustomSkillUtilityBase = SummonSpiritUtility(event_bus=self.event_bus, skill=CustomSkill("Summon_Spirits_luxon"), current_build=in_game_build, score_definition=ScoreStaticDefinition(95))
         self.armor_of_unfeeling_utility: CustomSkillUtilityBase = ArmorOfUnfeelingUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(80))
@@ -52,6 +48,7 @@ class RitualistRitualLord_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(event_bus=self.event_bus, score_definition=ScoreStaticDefinition(71), current_build=in_game_build, mana_required_to_cast=15)
         self.ebon_battle_standard_of_wisdom: CustomSkillUtilityBase = EbonBattleStandardOfWisdom(event_bus=self.event_bus, score_definition= ScorePerAgentQuantityDefinition(lambda agent_qte: 80 if agent_qte >= 3 else 60 if agent_qte <= 2 else 40), current_build=in_game_build, mana_required_to_cast=18)
         self.i_am_unstopabble: CustomSkillUtilityBase = IAmUnstoppableUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(99))
+        self.air_of_superiority_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Air_of_Superiority"), mana_required_to_cast=5, current_build=in_game_build, score_definition=ScoreStaticDefinition(50), allowed_states= [BehaviorState.IN_AGGRO])
         self.fall_back_utility: CustomSkillUtilityBase = FallBackUtility(event_bus=self.event_bus, current_build=in_game_build)
         self.spirits_gift_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Spirits_Gift"), current_build=in_game_build, score_definition=ScoreStaticDefinition(75), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO])
         self.by_urals_hammer_utility: CustomSkillUtilityBase = ByUralsHammerUtility(event_bus=self.event_bus, current_build=in_game_build)
@@ -66,10 +63,7 @@ class RitualistRitualLord_UtilitySkillBar(CustomBehaviorBaseUtility):
     def skills_allowed_in_behavior(self) -> list[CustomSkillUtilityBase]:
         return [
             self.boon_of_creation_utility,
-            self.shelter_utility,
-            self.union_utility,
-            self.earthbind_utility,
-            self.displacement_utility,
+            self.ritual_lord_utility,
             self.summon_spirit_kurzick,
             self.summon_spirit_luxon,
             self.armor_of_unfeeling_utility,
@@ -84,6 +78,7 @@ class RitualistRitualLord_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.great_dwarf_weapon_utility,
             self.spirits_gift_utility,
             self.by_urals_hammer_utility,
+            self.air_of_superiority_utility
         ]
 
     @property
@@ -91,6 +86,4 @@ class RitualistRitualLord_UtilitySkillBar(CustomBehaviorBaseUtility):
     def skills_required_in_behavior(self) -> list[CustomSkill]:
         return [
             CustomSkill("Ritual_Lord"),
-            self.shelter_utility.custom_skill,
-            self.union_utility.custom_skill,
         ]
