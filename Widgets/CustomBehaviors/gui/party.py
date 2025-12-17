@@ -74,7 +74,7 @@ def render():
     shared_data = CustomBehaviorWidgetMemoryManager().GetCustomBehaviorWidgetData()
     # Table layout for top controls
     flag_manager = PartyFlaggingManager()
-    if PyImGui.begin_table("party_top_controls", 12, PyImGui.TableFlags.NoSavedSettings | PyImGui.TableFlags.SizingStretchProp):
+    if PyImGui.begin_table("party_top_controls", 13, PyImGui.TableFlags.NoSavedSettings | PyImGui.TableFlags.SizingStretchProp):
         PyImGui.table_setup_column("All",          PyImGui.TableColumnFlags.WidthFixed,   46.0)
         PyImGui.table_setup_column("SepAfterAll",  PyImGui.TableColumnFlags.WidthFixed,   12.0)
         PyImGui.table_setup_column("Combat",       PyImGui.TableColumnFlags.WidthFixed,   46.0)
@@ -83,6 +83,7 @@ def render():
         PyImGui.table_setup_column("Chesting",     PyImGui.TableColumnFlags.WidthFixed,   46.0)
         PyImGui.table_setup_column("Blessing",     PyImGui.TableColumnFlags.WidthFixed,   46.0)
         PyImGui.table_setup_column("Inventory",    PyImGui.TableColumnFlags.WidthFixed,   46.0)
+        PyImGui.table_setup_column("RezSroll",    PyImGui.TableColumnFlags.WidthFixed,   46.0)
         PyImGui.table_setup_column("|",            PyImGui.TableColumnFlags.WidthFixed,   12.0)
         PyImGui.table_setup_column("FlagSet",      PyImGui.TableColumnFlags.WidthFixed,   46.0)
         PyImGui.table_setup_column("FlagSet2",     PyImGui.TableColumnFlags.WidthFixed,   46.0)
@@ -221,6 +222,23 @@ def render():
         PyImGui.pop_style_var(1)
         PyImGui.pop_style_color(1)
 
+        # Rez scroll
+        PyImGui.table_next_column()
+        if shared_data.is_scroll_of_resurrection_enabled:
+            PyImGui.push_style_var(ImGui.ImGuiStyleVar.FrameBorderSize, 3)
+            PyImGui.push_style_color(PyImGui.ImGuiCol.Border, UtilitySkillTypologyColor.SCROLL_OF_RESURRECTION)
+            if ImGui.ImageButton(f"disable scroll of resurrection", project_root + f"\\gui\\textures\\scroll_of_resurrection.png", 40, 40):
+                CustomBehaviorParty().set_party_is_scroll_of_resurrection_enabled(False)
+            ImGui.show_tooltip("disable scroll of resurrection")
+        else:
+            PyImGui.push_style_var(ImGui.ImGuiStyleVar.FrameBorderSize, 3)
+            PyImGui.push_style_color(PyImGui.ImGuiCol.Border, Utils.ColorToTuple(Utils.RGBToColor(255, 30, 0, 255)))
+            if ImGui.ImageButton(f"enable scroll of resurrection", project_root + f"\\gui\\textures\\scroll_of_resurrection.png", 40, 40):
+                CustomBehaviorParty().set_party_is_scroll_of_resurrection_enabled(True)
+            ImGui.show_tooltip("enable scroll of resurrection")
+        PyImGui.pop_style_var(1)
+        PyImGui.pop_style_color(1)
+
         # Separator
         PyImGui.table_next_column()
         sep_x, sep_y = PyImGui.get_cursor_screen_pos()
@@ -279,22 +297,6 @@ def render():
         PyImGui.end_table()
 
 
-    PyImGui.same_line(0, 10)
-
-    if shared_data.is_scroll_of_resurrection_enabled:
-        PyImGui.push_style_var(ImGui.ImGuiStyleVar.FrameBorderSize, 3)
-        PyImGui.push_style_color(PyImGui.ImGuiCol.Border, UtilitySkillTypologyColor.SCROLL_OF_RESURRECTION)
-        if ImGui.ImageButton(f"disable scroll of resurrection", project_root + f"\\gui\\textures\\scroll_of_resurrection.png", 40, 40):
-            CustomBehaviorParty().set_party_is_scroll_of_resurrection_enabled(False)
-        ImGui.show_tooltip("disable scroll of resurrection")
-    else:
-        PyImGui.push_style_var(ImGui.ImGuiStyleVar.FrameBorderSize, 3)
-        PyImGui.push_style_color(PyImGui.ImGuiCol.Border, Utils.ColorToTuple(Utils.RGBToColor(255, 30, 0, 255)))
-        if ImGui.ImageButton(f"enable scroll of resurrection", project_root + f"\\gui\\textures\\scroll_of_resurrection.png", 40, 40):
-            CustomBehaviorParty().set_party_is_scroll_of_resurrection_enabled(True)
-        ImGui.show_tooltip("enable scroll of resurrection")
-    PyImGui.pop_style_var(1)
-    PyImGui.pop_style_color(1)
 
     PyImGui.separator()
 
